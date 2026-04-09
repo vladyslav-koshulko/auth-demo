@@ -10,6 +10,8 @@ use crate::models::user::User;
 use crate::oauth::claims::IdTokenClaims;
 use crate::oauth::client::exchange_code_for_token;
 use crate::oauth::jwt::parse_id_token;
+use crate::session::file::save_session;
+use crate::utils::crypto::generate_session_id;
 
 #[derive(Clone, Debug,)]
 pub struct AppState {
@@ -77,7 +79,13 @@ async fn callback_handler(
                         email: claims.email,
                         name: claims.name,
                     };
-                    println!("User: {:#?}", user);
+                    
+                    let session_id = generate_session_id();
+                    println!("Session created: {}", session_id);
+                    
+                    save_session(session_id.as_ref());
+                    println!("User logged in: {:?}", user);
+                    
                     "Login successful. You can close this tab.".to_string()
                 }
                 Err(e) => {

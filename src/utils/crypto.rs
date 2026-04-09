@@ -8,3 +8,7 @@ pub fn generate_random_string(len: usize) -> String {
         .map(char::from)
         .collect()
 }
+
+pub fn generate_session_id() -> String {
+    generate_random_string(32)
+}
