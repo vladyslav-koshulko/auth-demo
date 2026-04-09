@@ -6,7 +6,10 @@ use axum::response::IntoResponse;
 use axum::Router;
 use axum::routing::get;
 use tokio::net::TcpListener;
+use crate::models::user::User;
+use crate::oauth::claims::IdTokenClaims;
 use crate::oauth::client::exchange_code_for_token;
+use crate::oauth::jwt::parse_id_token;
 
 #[derive(Clone, Debug,)]
 pub struct AppState {
@@ -64,10 +67,25 @@ async fn callback_handler(
 
     match exchange_code_for_token(code, client_id.as_ref(), client_secret.as_ref(), redirect_uri.as_ref()).await {
         Ok(token) => {
-            println!("Access token: {}", token.access_token);
             println!("ID token: {}", token.id_token);
 
-            "Login successful. You can close this tab.".to_string()
+            match parse_id_token(token.id_token.as_ref(), client_id.as_ref()) {
+                Ok(claims) => {
+                    println!("ID token claims: {:#?}", claims);
+                    let user = User {
+                        id: claims.sub,
+                        email: claims.email,
+                        name: claims.name,
+                    };
+                    println!("User: {:#?}", user);
+                    "Login successful. You can close this tab.".to_string()
+                }
+                Err(e) => {
+                    println!("JWT parsing error: {}", e);
+                    "Invalid token".to_string()
+                }
+            }
+
         }
         Err(e) => {
             println!("Token exchange error: {:?}", e);
