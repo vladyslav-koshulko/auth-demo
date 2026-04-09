@@ -1,11 +1,14 @@
 use std::collections::HashMap;
+use std::env;
 use std::sync::{Arc, Mutex};
 use axum::extract::{Query, State};
+use axum::response::IntoResponse;
 use axum::Router;
 use axum::routing::get;
 use tokio::net::TcpListener;
+use crate::oauth::client::exchange_code_for_token;
 
-#[derive(Clone)]
+#[derive(Clone, Debug,)]
 pub struct AppState {
     pub expected_state: Arc<Mutex<Option<String>>>,
 }
@@ -22,16 +25,25 @@ pub async fn start_server(state: AppState) {
     axum::serve(listener, app).await.unwrap();
 }
 
+
+#[axum::debug_handler]
 async fn callback_handler(
     State(app_state): State<AppState>,
     Query(params): Query<HashMap<String, String>>
-)  -> String {
-    let code = params.get("code");
+)  -> impl IntoResponse {
+    let code = match params.get("code") {
+        Some(code) => code,
+        None => {
+            println!("No code received");
+            return "No code received".to_string();
+        }
+    };
     let state = params.get("state");
-    println!("Received code: {:?}", code);
-    println!("Received state: {:?}", state);
 
-    let expected_state = app_state.expected_state.lock().unwrap();
+    let expected_state = {
+        let guard = app_state.expected_state.lock().unwrap();
+        guard.clone()
+    };
     match (state, expected_state.as_ref()) {
         (Some(received), Some(expected)) => {
             if received != expected {
@@ -46,6 +58,20 @@ async fn callback_handler(
     }
     println!("State is valid");
 
+    let client_id = env::var("GOOGLE_CLIENT_ID").unwrap();
+    let client_secret = env::var("GOOGLE_CLIENT_SECRET").unwrap();
+    let redirect_uri = env::var("REDIRECT_URL").unwrap();
 
-    "Login successful. You can close this tab.".to_string()
+    match exchange_code_for_token(code, client_id.as_ref(), client_secret.as_ref(), redirect_uri.as_ref()).await {
+        Ok(token) => {
+            println!("Access token: {}", token.access_token);
+            println!("ID token: {}", token.id_token);
+
+            "Login successful. You can close this tab.".to_string()
+        }
+        Err(e) => {
+            println!("Token exchange error: {:?}", e);
+            "Error during token exchange:".to_string()
+        }
+    }
 }

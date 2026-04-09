@@ -1,3 +1,4 @@
+use std::env;
 use std::sync::{Arc, Mutex};
 use clap::Parser;
 use crate::oauth::google::build_authorization_url;
@@ -14,17 +15,18 @@ mod oauth;
 #[tokio::main]
 async fn main() {
     let cli = cli::Cli::parse();
-
+    dotenvy::dotenv().expect("Failed to load .env file");
 
     match cli.command {
+
         cli::Commands::Login =>{
             let state = generate_random_string(16);
             let nonce = generate_random_string(16);
 
-            let client_id = "YOUR_CLIENT_ID";
-            let redirect_uri = "http://127.0.0.1:8081/callback";
+            let client_id = env::var("GOOGLE_CLIENT_ID").expect("Missing GOOGLE_CLIENT_ID");
+            let redirect_uri = env::var("REDIRECT_URL").expect("Missing REDIRECT_URI");
 
-            let url = build_authorization_url(client_id, redirect_uri, &state, &nonce);
+            let url = build_authorization_url(client_id.as_ref(), redirect_uri.as_ref(), &state, &nonce);
 
             let shared_state = Arc::new(Mutex::new(Some(state)));
 
