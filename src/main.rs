@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use clap::Parser;
 use crate::oauth::google::build_authorization_url;
 use crate::server::{start_server, AppState};
-use crate::session::file::{clear_session, load_session};
+use crate::session::file::{clear_session, get_current_user};
 use crate::utils::crypto::generate_random_string;
 
 mod cli;
@@ -43,14 +43,15 @@ async fn main() {
             start_server(app_state).await;
         },
         cli::Commands::Me => {
-            match load_session() {
+            match get_current_user() {
                 None => {
-                    println!("User is not logged in (stub)");
+                    println!("User not logged in");
                 }
-                Some(session_id) => {
-                    println!("Session ID: {}", session_id);
-
-                    print!("User is logged in (stub)");
+                Some(user) => {
+                    println!("User:");
+                    println!("ID: {}", user.id);
+                    println!("Name: {}", user.name);
+                    println!("Email: {}", user.email);
                 }
             }
         },
