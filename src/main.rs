@@ -13,6 +13,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 mod cli;
+mod middleware;
 mod models;
 mod oauth;
 mod server;

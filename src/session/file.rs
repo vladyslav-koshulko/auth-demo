@@ -1,4 +1,5 @@
 use crate::models::user::User;
+use crate::utils::session_encryption;
 use fs::write;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string_pretty};
@@ -14,7 +15,7 @@ pub struct SessionDB {
     sessions: HashMap<String, Session>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Session {
     pub user: User,
     pub access_token: String,
@@ -24,14 +25,21 @@ pub struct Session {
 
 fn load_db() -> SessionDB {
     match read_to_string(SESSION_FILE) {
-        Ok(data) => from_str(&data).unwrap_or_default(),
+        Ok(data) => {
+            if let Ok(decrypted) = session_encryption::decrypt(data.as_bytes()) {
+                return from_str(&String::from_utf8_lossy(&decrypted)).unwrap_or_default();
+            } else {
+                from_str(&data).unwrap_or_default()
+            }
+        }
         Err(_) => SessionDB::default(),
     }
 }
 
 fn save_db(db: &SessionDB) {
-    let data = to_string_pretty(db).unwrap();
-    write(SESSION_FILE, data).expect("Unable to write session file");
+    let json = to_string_pretty(db).unwrap();
+    let encrypted = session_encryption::encrypt(json.as_bytes()).unwrap();
+    write(SESSION_FILE, encrypted).expect("Unable to write session file");
 }
 
 pub fn save_session_with_user(session_id: &str, session: Session) {

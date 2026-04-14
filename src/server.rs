@@ -1,3 +1,4 @@
+use crate::middleware::auth::{auth_middleware, AuthUser};
 use crate::models::user::User;
 use crate::oauth::client::exchange_code_for_token;
 use crate::oauth::jwks_cache::JwksCache;
@@ -5,6 +6,7 @@ use crate::oauth::jwt::parse_id_token;
 use crate::session::file::{save_session_with_user, Session};
 use crate::utils::crypto::generate_session_id;
 use axum::extract::{Query, State};
+use axum::middleware;
 use axum::response::IntoResponse;
 use axum::routing::get;
 use axum::Router;
@@ -23,9 +25,13 @@ pub struct AppState {
 }
 
 pub async fn start_server(state: AppState) {
-    let app = Router::new()
-        .route("/callback", get(callback_handler))
-        .with_state(state);
+    let public_routers = Router::new().route("/callback", get(callback_handler));
+
+    let protected_routers = Router::new()
+        .route("/me", get(protected_me_handler))
+        .layer(middleware::from_fn(auth_middleware));
+
+    let app = public_routers.merge(protected_routers).with_state(state);
 
     let listener = TcpListener::bind("127.0.0.1:8081").await.unwrap();
 
@@ -131,4 +137,12 @@ async fn callback_handler(
             "Error during token exchange:".to_string()
         }
     }
+}
+
+async fn protected_me_handler(auth_user: AuthUser) -> impl IntoResponse {
+    let user = &auth_user.session.user;
+    format!(
+        "Authenticated User:\nID: {}\nName {}\nEmail: {}\n",
+        user.id, user.name, user.email
+    )
 }
