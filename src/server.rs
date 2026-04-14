@@ -19,6 +19,7 @@ pub struct AppState {
     pub expected_state: Arc<Mutex<Option<String>>>,
     pub jwks_cache: Arc<Mutex<JwksCache>>,
     pub code_verifier: Arc<Mutex<Option<String>>>,
+    pub expected_nonce: Arc<Mutex<Option<String>>>,
 }
 
 pub async fn start_server(state: AppState) {
@@ -74,16 +75,24 @@ async fn callback_handler(
         guard.clone().unwrap()
     };
     match exchange_code_for_token(
-        code, 
-        client_id.as_ref(), 
-        client_secret.as_ref(), 
+        code,
+        client_id.as_ref(),
+        client_secret.as_ref(),
         redirect_uri.as_ref(),
         &code_verifier,
     ).await {
         Ok(token) => {
             println!("ID token: {}", token.id_token);
-
-            match parse_id_token(&token.id_token, &client_id, app_state.jwks_cache.clone()).await {
+            let expected_nonce = {
+                let guard = app_state.expected_nonce.lock().unwrap();
+                guard.clone()
+            };
+            match parse_id_token(
+                &token.id_token,
+                &client_id,
+                app_state.jwks_cache.clone(),
+                expected_nonce
+            ).await {
                 Ok(claims) => {
                     println!("ID token claims: {:#?}", claims);
                     let user = User {

@@ -1,4 +1,5 @@
 use std::env;
+use std::process::exit;
 use std::sync::{Arc, Mutex};
 use clap::Parser;
 use crate::oauth::google::build_authorization_url;
@@ -39,11 +40,13 @@ async fn main() {
             );
 
             let shared_state = Arc::new(Mutex::new(Some(state)));
+            let expected_nonce = Arc::new(Mutex::new(Some(nonce)));
 
             let app_state = AppState {
                 expected_state: shared_state.clone(),
                 jwks_cache: Arc::new(Mutex::new(JwksCache::new())),
                 code_verifier: Arc::new(Mutex::new(Some(code_verifier))),
+                expected_nonce: expected_nonce.clone(),
             };
 
             println!("Opening browser ...");
@@ -71,4 +74,6 @@ async fn main() {
             println!("Logged out");
         },
     }
+    
+    exit(0);
 }

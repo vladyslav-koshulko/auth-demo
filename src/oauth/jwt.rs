@@ -9,6 +9,7 @@ pub async fn parse_id_token(
     id_token: &str,
     client_id: &str,
     jwks_cache: Arc<Mutex<JwksCache>>,
+    expected_nonce: Option<String>,
 ) -> Result<IdTokenClaims, String> {
 
     let kid = extract_kid(id_token)?;
@@ -39,9 +40,26 @@ pub async fn parse_id_token(
         &decoding_key,
         &validation,
     );
+    
+    
 
     match token {
         Ok(data) => {
+            if let Some(ref expected) = expected_nonce {
+                match &data.claims.nonce { 
+                    Some(received) if received == expected => {
+                        println!("Nonce validated successfully");
+                    }
+                    Some(received) => {
+                        return Err(format!("Nonce validation failed: expected {}, received {}", expected, received));
+                    }
+                    None => {
+                        return Err("Nonce not found in token".to_string());
+                    }
+                }
+            }
+            
+            
             Ok(data.claims)
         },
         Err(e) => Err(format!("Failed to decode ID token: {}", e)),

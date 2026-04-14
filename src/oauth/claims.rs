@@ -8,4 +8,5 @@ pub struct IdTokenClaims {
     pub aud: String,
     pub exp: u64,
     pub iss: String,
+    pub nonce: Option<String>,
 }
