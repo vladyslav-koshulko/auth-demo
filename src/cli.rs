@@ -13,4 +13,3 @@ pub enum Commands {
     Me,
     Logout
 }
-

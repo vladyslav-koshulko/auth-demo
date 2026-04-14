@@ -49,11 +49,11 @@ async fn main() {
                 None => {
                     println!("User not logged in");
                 }
-                Some(user) => {
+                Some(session) => {
                     println!("User:");
-                    println!("ID: {}", user.id);
-                    println!("Name: {}", user.name);
-                    println!("Email: {}", user.email);
+                    println!("ID: {}", session.user.id);
+                    println!("Name: {}", session.user.name);
+                    println!("Email: {}", session.user.email);
                 }
             }
         },

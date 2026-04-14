@@ -9,7 +9,15 @@ const CURRENT_SESSION_FILE: &str = ".session";
 
 #[derive(Default, Serialize, Deserialize)]
 pub struct SessionDB {
-    sessions: HashMap<String, User>,
+    sessions: HashMap<String, Session>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Session {
+    pub user: User,
+    pub access_token: String,
+    pub refresh_token: Option<String>,
+    pub expires_at: u64,
 }
 
 
@@ -25,15 +33,15 @@ fn save_db(db: &SessionDB) {
     std::fs::write(SESSION_FILE, data).expect("Unable to write session file");
 }
 
-pub fn save_session_with_user(session_id: &str, user: &User) {
+pub fn save_session_with_user(session_id: &str, session: Session) {
     let mut db = load_db();
-    db.sessions.insert(session_id.to_string(), user.clone());
+    db.sessions.insert(session_id.to_string(), session.clone());
     save_db(&db);
     
     std::fs::write(CURRENT_SESSION_FILE, session_id).expect("Unable to write session file");
 }
 
-pub fn get_current_user() -> Option<User> {
+pub fn get_current_user() -> Option<Session> {
     let session_id = std::fs::read_to_string(CURRENT_SESSION_FILE).ok()?;
     let db = load_db();
     db.sessions.get(session_id.trim()).cloned()

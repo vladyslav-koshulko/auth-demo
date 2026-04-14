@@ -5,13 +5,13 @@ use axum::extract::{Query, State};
 use axum::response::IntoResponse;
 use axum::Router;
 use axum::routing::get;
+use jsonwebtoken::get_current_timestamp;
 use tokio::net::TcpListener;
 use crate::models::user::User;
-use crate::oauth::claims::IdTokenClaims;
 use crate::oauth::client::exchange_code_for_token;
 use crate::oauth::jwks_cache::JwksCache;
 use crate::oauth::jwt::parse_id_token;
-use crate::session::file::{save_session_with_user};
+use crate::session::file::{save_session_with_user, Session};
 use crate::utils::crypto::generate_session_id;
 
 #[derive(Clone)]
@@ -84,9 +84,17 @@ async fn callback_handler(
 
                     let session_id = generate_session_id();
                     println!("Session created: {}", session_id);
+                    let now = get_current_timestamp();
+                    let expires_at = now + token.expires_in as u64;
+                    let session = Session {
+                        user,
+                        access_token: token.access_token,
+                        refresh_token: token.refresh_token,
+                        expires_at,
+                    };
 
-                    save_session_with_user(&session_id, &user);
-                    println!("User logged in: {:?}", user);
+                    save_session_with_user(&session_id, session);
+                    println!("User logged in.");
 
                     "Login successful. You can close this tab.".to_string()
                 }
