@@ -18,6 +18,7 @@ use crate::utils::crypto::generate_session_id;
 pub struct AppState {
     pub expected_state: Arc<Mutex<Option<String>>>,
     pub jwks_cache: Arc<Mutex<JwksCache>>,
+    pub code_verifier: Arc<Mutex<Option<String>>>,
 }
 
 pub async fn start_server(state: AppState) {
@@ -68,8 +69,17 @@ async fn callback_handler(
     let client_id = env::var("GOOGLE_CLIENT_ID").unwrap();
     let client_secret = env::var("GOOGLE_CLIENT_SECRET").unwrap();
     let redirect_uri = env::var("REDIRECT_URL").unwrap();
-
-    match exchange_code_for_token(code, client_id.as_ref(), client_secret.as_ref(), redirect_uri.as_ref()).await {
+    let code_verifier = {
+        let guard = app_state.code_verifier.lock().unwrap();
+        guard.clone().unwrap()
+    };
+    match exchange_code_for_token(
+        code, 
+        client_id.as_ref(), 
+        client_secret.as_ref(), 
+        redirect_uri.as_ref(),
+        &code_verifier,
+    ).await {
         Ok(token) => {
             println!("ID token: {}", token.id_token);
 

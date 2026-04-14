@@ -19,6 +19,7 @@ pub async fn exchange_code_for_token(
     client_id: &str,
     client_secret: &str,
     redirect_uri: &str,
+    code_verifier: &str,
 ) -> Result<TokenResponse, reqwest::Error> {
     let client = Client::new();
 
@@ -28,6 +29,7 @@ pub async fn exchange_code_for_token(
         ("client_secret", client_secret),
         ("redirect_uri", redirect_uri),
         ("grant_type", "authorization_code"),
+        ("code_verifier", code_verifier),
     ];
 
     let res = client

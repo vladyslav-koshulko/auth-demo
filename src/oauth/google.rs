@@ -35,17 +35,19 @@ pub fn build_authorization_url(
     redirect_uri: &str,
     state: &str,
     nonce: &str,
+    code_challenge: &str,
 ) -> String {
     let base = env::var("AUTH_URI").expect("Missing AUTH_URI");
 
     format!(
-        "{}?client_id={}&redirect_uri={}&response_type=code&scope={}&state={}&nonce={}&access_type=offline&prompt=consent",
+        "{}?client_id={}&redirect_uri={}&response_type=code&scope={}&state={}&nonce={}&access_type=offline&prompt=consent&code_challenge={}&code_challenge_method=S256",
         base,
         encode(client_id),
         encode(redirect_uri),
         encode("openid email profile"),
         encode(state),
-        encode(nonce)
+        encode(nonce),
+        encode(code_challenge)
     )
 
 }

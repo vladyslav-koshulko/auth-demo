@@ -16,3 +16,5 @@ webbrowser = "0.8.0"
 reqwest = { version = "0.12.12", features = ["json", "rustls-tls"] }
 dotenvy = "0.15.7"
 jsonwebtoken = "9"
+sha2 = "0.11.0"
+base64 = "0.22.1"
