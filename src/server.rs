@@ -15,6 +15,8 @@ use std::collections::HashMap;
 use std::env;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
+use tokio::signal;
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -37,7 +39,32 @@ pub async fn start_server(state: AppState) {
 
     println!("Listening on http://127.0.0.1:8081");
 
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap();
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c().await.expect("failed to install CTRL+C signal handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>().await;
+
+    tokio::select! {
+        _ = ctrl_c => println!("\nReceived CTRL+C. Shutting down gracefully..."),
+        _ = terminate => println!("\nReceived SIGTERM. Shutting down gracefully..."),
+    }
 }
 
 #[axum::debug_handler]
