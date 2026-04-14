@@ -1,4 +1,6 @@
+use fs::write;
 use std::collections::HashMap;
+use std::fs;
 use std::fs::read_to_string;
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string_pretty};
@@ -30,7 +32,7 @@ fn load_db() -> SessionDB {
 
 fn save_db(db: &SessionDB) {
     let data = to_string_pretty(db).unwrap();
-    std::fs::write(SESSION_FILE, data).expect("Unable to write session file");
+    write(SESSION_FILE, data).expect("Unable to write session file");
 }
 
 pub fn save_session_with_user(session_id: &str, session: Session) {
@@ -38,15 +40,27 @@ pub fn save_session_with_user(session_id: &str, session: Session) {
     db.sessions.insert(session_id.to_string(), session.clone());
     save_db(&db);
     
-    std::fs::write(CURRENT_SESSION_FILE, session_id).expect("Unable to write session file");
+    write(CURRENT_SESSION_FILE, session_id).expect("Unable to write session file");
 }
 
 pub fn get_current_user() -> Option<Session> {
-    let session_id = std::fs::read_to_string(CURRENT_SESSION_FILE).ok()?;
+    let session_id = read_to_string(CURRENT_SESSION_FILE).ok()?;
     let db = load_db();
     db.sessions.get(session_id.trim()).cloned()
 }
 
+pub fn get_current_session_id() -> Option<String> {
+    read_to_string(CURRENT_SESSION_FILE).ok()
+        .map(|s| s.trim().to_string())
+}
+
 pub fn clear_session() {
-    std::fs::remove_file(CURRENT_SESSION_FILE).ok();
+    fs::remove_file(CURRENT_SESSION_FILE).ok();
+}
+
+
+pub fn update_session(session_id: &str, session: Session) {
+    let mut db = load_db();
+    db.sessions.insert(session_id.to_string(), session);
+    save_db(&db);
 }

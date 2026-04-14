@@ -1,12 +1,15 @@
 use std::env;
 use std::process::exit;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 use clap::Parser;
+use crate::oauth::client::ensure_valid_token;
 use crate::oauth::google::build_authorization_url;
 use crate::oauth::jwks_cache::JwksCache;
 use crate::server::{start_server, AppState};
-use crate::session::file::{clear_session, get_current_user};
+use crate::session::file::{clear_session, get_current_session_id, get_current_user};
 use crate::utils::crypto::{generate_code_challenge, generate_code_verifier, generate_random_string};
+use humantime::format_duration;
 
 mod cli;
 mod models;
@@ -57,15 +60,31 @@ async fn main() {
             start_server(app_state).await;
         },
         cli::Commands::Me => {
-            match get_current_user() {
+            match get_current_session_id() {
                 None => {
-                    println!("User not logged in");
+                    println!("Not logged in");
                 }
-                Some(session) => {
+                Some(session_id) => {
+                    let mut session = match get_current_user() {
+                        Some(s) => s,
+                        None => {
+                            println!("Session not fount");
+                            return;
+                        }
+                    };
+
+                    if let Err(e) = ensure_valid_token(&session_id, &mut session).await {
+                        println!("Failed to ensure valid token: {}", e);
+                        println!("Please login again");
+                        clear_session();
+                        return;
+                    }
+                    let expiration_time = Duration::from_millis(session.expires_at.clone());
                     println!("User:");
-                    println!("ID: {}", session.user.id);
-                    println!("Name: {}", session.user.name);
-                    println!("Email: {}", session.user.email);
+                    println!("  ID: {}", session.user.id);
+                    println!("  Name: {}", session.user.name);
+                    println!("  Email: {}", session.user.email);
+                    println!("  Token expires at: {}", format_duration(expiration_time))
                 }
             }
         },
@@ -74,6 +93,4 @@ async fn main() {
             println!("Logged out");
         },
     }
-    
-    exit(0);
 }
