@@ -11,5 +11,5 @@ pub struct Cli {
 pub enum Commands {
     Login,
     Me,
-    Logout
+    Logout,
 }

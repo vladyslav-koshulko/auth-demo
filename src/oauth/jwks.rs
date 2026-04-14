@@ -13,4 +13,3 @@ pub struct Jwk {
     pub kty: String,
     pub alg: String,
 }
-

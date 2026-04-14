@@ -1,18 +1,18 @@
-use std::collections::HashMap;
-use std::env;
-use std::sync::{Arc, Mutex};
-use axum::extract::{Query, State};
-use axum::response::IntoResponse;
-use axum::Router;
-use axum::routing::get;
-use jsonwebtoken::get_current_timestamp;
-use tokio::net::TcpListener;
 use crate::models::user::User;
 use crate::oauth::client::exchange_code_for_token;
 use crate::oauth::jwks_cache::JwksCache;
 use crate::oauth::jwt::parse_id_token;
 use crate::session::file::{save_session_with_user, Session};
 use crate::utils::crypto::generate_session_id;
+use axum::extract::{Query, State};
+use axum::response::IntoResponse;
+use axum::routing::get;
+use axum::Router;
+use jsonwebtoken::get_current_timestamp;
+use std::collections::HashMap;
+use std::env;
+use std::sync::{Arc, Mutex};
+use tokio::net::TcpListener;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -34,12 +34,11 @@ pub async fn start_server(state: AppState) {
     axum::serve(listener, app).await.unwrap();
 }
 
-
 #[axum::debug_handler]
 async fn callback_handler(
     State(app_state): State<AppState>,
-    Query(params): Query<HashMap<String, String>>
-)  -> impl IntoResponse {
+    Query(params): Query<HashMap<String, String>>,
+) -> impl IntoResponse {
     let code = match params.get("code") {
         Some(code) => code,
         None => {
@@ -80,7 +79,9 @@ async fn callback_handler(
         client_secret.as_ref(),
         redirect_uri.as_ref(),
         &code_verifier,
-    ).await {
+    )
+    .await
+    {
         Ok(token) => {
             println!("ID token: {}", token.id_token);
             let expected_nonce = {
@@ -91,8 +92,10 @@ async fn callback_handler(
                 &token.id_token,
                 &client_id,
                 app_state.jwks_cache.clone(),
-                expected_nonce
-            ).await {
+                expected_nonce,
+            )
+            .await
+            {
                 Ok(claims) => {
                     println!("ID token claims: {:#?}", claims);
                     let user = User {
@@ -122,7 +125,6 @@ async fn callback_handler(
                     "Invalid token".to_string()
                 }
             }
-
         }
         Err(e) => {
             println!("Token exchange error: {:?}", e);

@@ -1,5 +1,3 @@
-
-
 #[derive(Debug, serde::Deserialize)]
 pub struct IdTokenClaims {
     pub sub: String,

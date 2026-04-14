@@ -1,12 +1,10 @@
+use crate::oauth::jwks::Jwks;
+use crate::oauth::jwks_cache::JwksCache;
 use std::env;
 use std::sync::{Arc, Mutex};
 use urlencoding::encode;
-use crate::oauth::jwks::Jwks;
-use crate::oauth::jwks_cache::JwksCache;
 
-pub async fn get_jwks_with_cache(
-    cache: Arc<Mutex<JwksCache>>
-) -> Result<Jwks, String> {
+pub async fn get_jwks_with_cache(cache: Arc<Mutex<JwksCache>>) -> Result<Jwks, String> {
     {
         let cache_guard = cache.lock().unwrap();
         if cache_guard.is_valid() {
@@ -20,7 +18,6 @@ pub async fn get_jwks_with_cache(
         .await
         .map_err(|e| format!("Failed to fetch JWKS: {}", e))?;
 
-
     {
         let mut cache_guard = cache.lock().unwrap();
         cache_guard.set(jwks.clone(), 3600);
@@ -28,7 +25,6 @@ pub async fn get_jwks_with_cache(
 
     Ok(jwks)
 }
-
 
 pub fn build_authorization_url(
     client_id: &str,
@@ -49,14 +45,10 @@ pub fn build_authorization_url(
         encode(nonce),
         encode(code_challenge)
     )
-
 }
 
 pub async fn fetch_google_jwks() -> Result<Jwks, reqwest::Error> {
     let cert_uri = env::var("CERT_URI").expect("Missing CERT_URI");
-    let res = reqwest::get(cert_uri)
-        .await?
-        .json::<Jwks>()
-        .await?;
+    let res = reqwest::get(cert_uri).await?.json::<Jwks>().await?;
     Ok(res)
 }

@@ -1,6 +1,5 @@
-use std::time::Instant;
 use crate::oauth::jwks::Jwks;
-
+use std::time::Instant;
 
 #[derive(Clone)]
 pub struct JwksCache {

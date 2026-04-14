@@ -1,8 +1,8 @@
-use std::env;
+use crate::session::file::{save_session_with_user, Session};
 use jsonwebtoken::get_current_timestamp;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use crate::session::file::{save_session_with_user, Session};
+use std::env;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenResponse {
@@ -62,14 +62,14 @@ pub async fn refresh_access_token(refresh_token: &str) -> Result<TokenResponse, 
         .await
         .map_err(|e| e.to_string())?;
 
-    let body = res.json::<TokenResponse>().await.map_err(|e| e.to_string())?;
+    let body = res
+        .json::<TokenResponse>()
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(body)
 }
 
-pub async fn ensure_valid_token(
-    session_id: &str,
-    session: &mut Session,
-) -> Result<(), String> {
+pub async fn ensure_valid_token(session_id: &str, session: &mut Session) -> Result<(), String> {
     let now = get_current_timestamp();
     if now > session.expires_at {
         println!("Token expired, refreshing...");

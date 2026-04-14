@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::models::user::User;
+use std::collections::HashMap;
 
 pub struct SessionStore {
     sessions: HashMap<String, User>,
@@ -24,4 +24,3 @@ impl SessionStore {
         self.sessions.remove(session_id);
     }
 }
-
