@@ -6,6 +6,8 @@ use serde_json::{from_str, to_string_pretty};
 use std::collections::HashMap;
 use std::fs;
 use std::fs::read_to_string;
+use jsonwebtoken::get_current_timestamp;
+
 
 const SESSION_FILE: &str = ".session_db";
 const CURRENT_SESSION_FILE: &str = ".session";
@@ -70,4 +72,19 @@ pub fn update_session(session_id: &str, session: Session) {
     let mut db = load_db();
     db.sessions.insert(session_id.to_string(), session);
     save_db(&db);
+}
+
+pub fn cleanup_expired_sessions(){
+    let mut db = load_db();
+    let now = get_current_timestamp();
+    
+    let before_count = db.sessions.len();
+    
+    db.sessions.retain(|_, session| session.expires_at > now);
+    
+    let after_count = db.sessions.len();
+    if before_count != after_count {
+        save_db(&db);
+        println!("Removed {} expired sessions", before_count - after_count);
+    }
 }

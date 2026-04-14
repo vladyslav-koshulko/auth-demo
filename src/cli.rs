@@ -12,4 +12,5 @@ pub enum Commands {
     Login,
     Me,
     Logout,
+    Cleanup,
 }

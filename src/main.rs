@@ -2,7 +2,9 @@ use crate::oauth::client::ensure_valid_token;
 use crate::oauth::google::build_authorization_url;
 use crate::oauth::jwks_cache::JwksCache;
 use crate::server::{start_server, AppState};
-use crate::session::file::{clear_session, get_current_session_id, get_current_user};
+use crate::session::file::{
+    cleanup_expired_sessions, clear_session, get_current_session_id, get_current_user,
+};
 use crate::utils::crypto::{
     generate_code_challenge, generate_code_verifier, generate_random_string,
 };
@@ -90,6 +92,10 @@ async fn main() {
         cli::Commands::Logout => {
             clear_session();
             println!("Logged out");
+        }
+        cli::Commands::Cleanup => {
+            cleanup_expired_sessions();
+            println!("Expired sessions cleaned up");
         }
     }
 }

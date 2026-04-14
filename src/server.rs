@@ -16,7 +16,6 @@ use std::env;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpListener;
 use tokio::signal;
-use std::time::Duration;
 
 #[derive(Clone)]
 pub struct AppState {
