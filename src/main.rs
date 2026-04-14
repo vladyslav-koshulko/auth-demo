@@ -2,6 +2,7 @@ use std::env;
 use std::sync::{Arc, Mutex};
 use clap::Parser;
 use crate::oauth::google::build_authorization_url;
+use crate::oauth::jwks_cache::JwksCache;
 use crate::server::{start_server, AppState};
 use crate::session::file::{clear_session, get_current_user};
 use crate::utils::crypto::generate_random_string;
@@ -33,6 +34,7 @@ async fn main() {
 
             let app_state = AppState {
                 expected_state: shared_state.clone(),
+                jwks_cache: Arc::new(Mutex::new(JwksCache::new())),
             };
 
             println!("Opening browser ...");

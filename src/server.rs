@@ -9,13 +9,15 @@ use tokio::net::TcpListener;
 use crate::models::user::User;
 use crate::oauth::claims::IdTokenClaims;
 use crate::oauth::client::exchange_code_for_token;
+use crate::oauth::jwks_cache::JwksCache;
 use crate::oauth::jwt::parse_id_token;
 use crate::session::file::{save_session_with_user};
 use crate::utils::crypto::generate_session_id;
 
-#[derive(Clone, Debug,)]
+#[derive(Clone)]
 pub struct AppState {
     pub expected_state: Arc<Mutex<Option<String>>>,
+    pub jwks_cache: Arc<Mutex<JwksCache>>,
 }
 
 pub async fn start_server(state: AppState) {
@@ -71,7 +73,7 @@ async fn callback_handler(
         Ok(token) => {
             println!("ID token: {}", token.id_token);
 
-            match parse_id_token(token.id_token.as_ref(), client_id.as_ref()) {
+            match parse_id_token(&token.id_token, &client_id, app_state.jwks_cache.clone()).await {
                 Ok(claims) => {
                     println!("ID token claims: {:#?}", claims);
                     let user = User {
@@ -79,13 +81,13 @@ async fn callback_handler(
                         email: claims.email,
                         name: claims.name,
                     };
-                    
+
                     let session_id = generate_session_id();
                     println!("Session created: {}", session_id);
-                    
+
                     save_session_with_user(&session_id, &user);
                     println!("User logged in: {:?}", user);
-                    
+
                     "Login successful. You can close this tab.".to_string()
                 }
                 Err(e) => {
